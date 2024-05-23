@@ -8,10 +8,16 @@ class Tag(models.Model):
     name = models.CharField(verbose_name='Название', max_length=64, unique=True)
     slug = models.SlugField(verbose_name='Идентификатор', max_length=64, unique=True)
 
+    def __str__(self) -> str:
+        return self.name
+
 
 class Ingredient(models.Model):
     name = models.CharField(verbose_name='Название', max_length=64)
     measurment_unit = models.CharField(verbose_name='Мера измерения', max_length=32)
+
+    def __str__(self) -> str:
+        return self.name
 
 
 class Recipe(models.Model):
@@ -25,9 +31,16 @@ class Recipe(models.Model):
     text = models.TextField(max_length=256, blank=True, null=True)
     cooking_time = models.PositiveIntegerField(blank=True, null=True)
 
+    def __str__(self) -> str:
+        return self.name
+
 
 class RecipeIngredient(models.Model):
     recipes = models.ForeignKey(Recipe, on_delete=models.CASCADE)
     ingredients = models.ForeignKey(Ingredient, on_delete=models.CASCADE)
     amount = models.PositiveIntegerField(blank=True, null=True)
+
+    def __str__(self) -> str:
+        return f'{self.recipes.name} - {self.ingredients.name}' 
+
 
