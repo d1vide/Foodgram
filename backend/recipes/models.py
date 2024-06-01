@@ -41,6 +41,6 @@ class RecipeIngredient(models.Model):
     amount = models.PositiveIntegerField(blank=True, null=True)
 
     def __str__(self) -> str:
-        return f'{self.recipes.name} - {self.ingredients.name}' 
+        return f'{self.recipes.name} - {self.ingredients.name}'
 
 
