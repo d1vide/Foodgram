@@ -4,14 +4,15 @@ from rest_framework import filters, mixins, viewsets, permissions, pagination, s
 from django.contrib.auth import get_user_model
 from django.core.files.base import ContentFile
 from rest_framework.decorators import action
+from django.db.models import Sum
 from rest_framework.response import Response
 from rest_framework.generics import get_object_or_404
-
+from django.http import HttpResponse
 
 from .serializers import (CustomUserSerializer, FavoriteResponseSerializer, FavoriteSerializer,
                             RecipeUnsafeSerializer, IngredientSerializer, TagSerializer,
                             RecipeSafeSerializer, SubscribeSerializer, ShoppingListSerializer)
-from recipes.models import Recipe, Ingredient, Tag, FavoriteRecipe, ShoppingList
+from recipes.models import Recipe, Ingredient, Tag, FavoriteRecipe, ShoppingList, RecipeIngredient
 from users.models import Subscribe
 
 
@@ -88,6 +89,12 @@ class RecipeViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         serializer.save(author=self.request.user)
+    
+    def _create_txt(self, data, filename):
+        with open(filename, 'w', encoding='utf-8') as file:
+            for item in data:
+                file.write(f'{item["ingredients__name"]}: {item["amount"]}{item["ingredients__measurment_unit"]} \n')
+
 
     @action(methods=['POST', 'DELETE'], detail=True)
     def favorite(self, request, pk):
@@ -126,7 +133,12 @@ class RecipeViewSet(viewsets.ModelViewSet):
 
     @action(methods=['GET'], detail=False)
     def download_shopping_cart(self, request):
-        pass
+        ingredients = RecipeIngredient.objects.filter(recipes__shopping__user=request.user).values(
+            'ingredients__name',
+            'ingredients__measurment_unit'
+        ).annotate(amount=Sum('amount'))
+        file = self._create_txt(ingredients, 'shopping_list.txt')
+        return HttpResponse(file, content_type='text/plain')
 
 class TagViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = Tag.objects.all()

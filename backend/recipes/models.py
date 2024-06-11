@@ -40,7 +40,7 @@ class RecipeIngredient(models.Model):
     amount = models.PositiveIntegerField(blank=False, null=False)
 
     def __str__(self) -> str:
-        return f'{self.recipes.name} - {self.ingredients.name}'
+        return f'{self.recipes.name} - {self.ingredients.name} - {self.amount}'
 
 
 class FavoriteRecipe(models.Model):
@@ -52,8 +52,9 @@ class FavoriteRecipe(models.Model):
 
 
 class ShoppingList(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE, blank=False, null=False)
-    recipe = models.ForeignKey(Recipe, on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE, blank=False, null=False, 
+                             related_name='shopping_user')
+    recipe = models.ForeignKey(Recipe, on_delete=models.CASCADE, related_name='shopping')
 
     def __str__(self) -> str:
         return f'{self.user} - {self.recipe.name}'
