@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from recipes.models import Recipe, RecipeIngredient, Ingredient, Tag, FavoriteRecipe
+from recipes.models import Recipe, RecipeIngredient, Ingredient, Tag, FavoriteRecipe, ShoppingList
 
 from djoser.serializers import UserSerializer
 from django.contrib.auth import get_user_model
@@ -113,3 +113,11 @@ class SubscribeSerializer(serializers.ModelSerializer):
             recipes = recipes[:int(recipes_limit)]
         serializer = RecipeOutputSerializer(recipes, many=True, read_only=True)
         return serializer.data
+
+
+class ShoppingListSerializer(serializers.ModelSerializer):
+    recipe = serializers.PrimaryKeyRelatedField(queryset=Recipe.objects.all())
+    user = serializers.PrimaryKeyRelatedField(queryset=User.objects.all())
+    class Meta:
+        model = ShoppingList
+        fields = '__all__'

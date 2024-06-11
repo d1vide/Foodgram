@@ -8,8 +8,10 @@ from rest_framework.response import Response
 from rest_framework.generics import get_object_or_404
 
 
-from .serializers import CustomUserSerializer, FavoriteResponseSerializer, FavoriteSerializer, RecipeUnsafeSerializer, IngredientSerializer, TagSerializer, RecipeSafeSerializer, SubscribeSerializer
-from recipes.models import Recipe, Ingredient, Tag, FavoriteRecipe
+from .serializers import (CustomUserSerializer, FavoriteResponseSerializer, FavoriteSerializer,
+                            RecipeUnsafeSerializer, IngredientSerializer, TagSerializer,
+                            RecipeSafeSerializer, SubscribeSerializer, ShoppingListSerializer)
+from recipes.models import Recipe, Ingredient, Tag, FavoriteRecipe, ShoppingList
 from users.models import Subscribe
 
 
@@ -99,11 +101,32 @@ class RecipeViewSet(viewsets.ModelViewSet):
                 serializer.save()
                 response_serializer = FavoriteResponseSerializer(recipe)
                 return Response(response_serializer.data, status=status.HTTP_201_CREATED)
-        else:
-            if not FavoriteRecipe.objects.filter(recipe=recipe, user=self.request.user).exists():
+        if not FavoriteRecipe.objects.filter(recipe=recipe, user=self.request.user).exists():
+            return Response(status=status.HTTP_400_BAD_REQUEST)
+        get_object_or_404(FavoriteRecipe, user=self.request.user, recipe=recipe).delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+    
+    @action(methods=['POST', 'DELETE'], detail=True)
+    def shopping_cart(self, request, pk):
+        recipe = get_object_or_404(Recipe, pk=pk)
+        if request.method == 'POST':
+            if ShoppingList.objects.filter(recipe=recipe, user=self.request.user).exists():
                 return Response(status=status.HTTP_400_BAD_REQUEST)
-            get_object_or_404(FavoriteRecipe, user=self.request.user, recipe=recipe).delete()
-            return Response(status=status.HTTP_204_NO_CONTENT)
+            data = {'recipe': recipe.pk, 'user': self.request.user.pk}
+            serializer = ShoppingListSerializer(data=data)
+            if serializer.is_valid(raise_exception=True):
+                serializer.save()
+                response_serializer = FavoriteResponseSerializer(recipe)
+                return Response(response_serializer.data, status=status.HTTP_201_CREATED)
+
+        if not ShoppingList.objects.filter(recipe=recipe, user=self.request.user).exists():
+            return Response(status=status.HTTP_400_BAD_REQUEST)
+        get_object_or_404(ShoppingList, user=self.request.user, recipe=recipe).delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+    @action(methods=['GET'], detail=False)
+    def download_shopping_cart(self, request):
+        pass
 
 class TagViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = Tag.objects.all()
