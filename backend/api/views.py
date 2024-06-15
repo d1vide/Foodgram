@@ -6,7 +6,7 @@ from django.core.files.base import ContentFile
 from rest_framework.decorators import action
 from django.db.models import Sum
 from rest_framework.response import Response
-from rest_framework.exceptions import NotAuthenticated
+from rest_framework.permissions import SAFE_METHODS
 from rest_framework.generics import get_object_or_404
 from django.http import HttpResponse
 
@@ -46,7 +46,7 @@ class UserViewSet(DjoserUserViewSet):
                 format, imgstr = avatar_data.split(';base64,')
                 ext = format.split('/')[-1]
                 avatar = ContentFile(base64.b64decode(imgstr), name=f'image.{ext}')
-            except TypeError:
+            except Exception:
                 return Response(status=status.HTTP_400_BAD_REQUEST)
 
             user.avatar = avatar
@@ -84,8 +84,7 @@ class UserViewSet(DjoserUserViewSet):
         queryset = User.objects.filter(following__subscriber=request.user)
         serializer = SubscribeSerializer(queryset, many=True, context={'request': request})
         return Response(serializer.data,
-                                     status=status.HTTP_200_OK)
-
+                        status=status.HTTP_200_OK)
 
 
 class RecipeViewSet(viewsets.ModelViewSet):
@@ -95,13 +94,13 @@ class RecipeViewSet(viewsets.ModelViewSet):
     pagination_class = pagination.PageNumberPagination
 
     def get_serializer_class(self):
-        if self.request.method in ['POST', 'PATCH', 'DEL']:
-            return RecipeUnsafeSerializer
-        return RecipeSafeSerializer
+        if self.request.method in SAFE_METHODS:
+            return RecipeSafeSerializer
+        return RecipeUnsafeSerializer
 
     def perform_create(self, serializer):
         serializer.save(author=self.request.user)
-    
+
     def _create_txt(self, data, filename):
         with open(filename, 'w', encoding='utf-8') as file:
             for item in data:
@@ -124,7 +123,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
             return Response(status=status.HTTP_400_BAD_REQUEST)
         get_object_or_404(FavoriteRecipe, user=self.request.user, recipe=recipe).delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
-    
+
     @action(methods=['POST', 'DELETE'], detail=True)
     def shopping_cart(self, request, pk):
         recipe = get_object_or_404(Recipe, pk=pk)
@@ -155,6 +154,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
 class TagViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = Tag.objects.all()
     serializer_class = TagSerializer
+    pagination_class = None
 
 
 class IngredientViewSet(viewsets.ReadOnlyModelViewSet):

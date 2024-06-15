@@ -20,29 +20,7 @@ class CustomUserSerializer(UserSerializer):
     
     def get_is_subscribed(self, obj):
         cur_user = self.context.get('request').user
-        if not cur_user.is_authenticated:
-            return False
-        return Subscribe.objects.filter(subscriber=cur_user, user=obj).exists()
-
-
-    # def create(self, validated_data):
-    #     password = validated_data.pop('password', None)
-    #     instance = self.Meta.model(**validated_data)
-    #     instance.is_active = True
-    #     if password is not None:  
-    #         instance.set_password(password)
-    #     instance.save()
-    #     return instance
-
-    # def to_representation(self, instance):
-    #     return {
-    #             "email": instance.email,
-    #             "username": instance.username,
-    #             "first_name": instance.first_name,
-    #             "last_name": instance.last_name,
-    #             "password": instance.password
-    #         }
-
+        return cur_user and cur_user.is_authenticated and Subscribe.objects.filter(subscriber=cur_user, user=obj).exists()
 
 class TagSerializer(serializers.ModelSerializer):
     class Meta:
@@ -59,7 +37,7 @@ class RecipeIngredientSerializer(serializers.ModelSerializer):
     id = serializers.PrimaryKeyRelatedField(queryset=Ingredient.objects.all())
     class Meta:
         model = RecipeIngredient
-        fields = ('id', 'amount', )
+        fields = ('id', 'amount', 'ingredient__name')
 
 class RecipeUnsafeSerializer(serializers.ModelSerializer):
     tags = serializers.PrimaryKeyRelatedField(queryset=Tag.objects.all(), many=True)
@@ -68,6 +46,10 @@ class RecipeUnsafeSerializer(serializers.ModelSerializer):
     class Meta:
         model = Recipe
         fields = ('ingredients', 'tags', 'name', 'text', 'cooking_time', )
+    
+    def to_representation(self, instance):
+        serializer = RecipeSafeSerializer(instance, context=self.context)
+        return serializer.data
 
     def create(self, validated_data):
         tag_data = validated_data.pop('tags')
@@ -82,17 +64,22 @@ class RecipeUnsafeSerializer(serializers.ModelSerializer):
 
 class RecipeSafeSerializer(serializers.ModelSerializer):
     tags = TagSerializer(many=True, read_only=True)
-    author = UserSerializer(read_only=True)
+    author = CustomUserSerializer(read_only=True)
     ingredients = RecipeIngredientSerializer(many=True, source='recipeingredient_set')
     is_favorited = serializers.SerializerMethodField(read_only=True)
+    is_in_shopping_cart = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
         model = Recipe
-        fields = '__all__'
+        fields = ('id', 'tags', 'author', 'ingredients', 'is_favorited', 'is_in_shopping_cart', 'name', 'image', 'text', 'cooking_time', )
 
     def get_is_favorited(self, obj):
         cur_user = self.context.get('request').user
-        return FavoriteRecipe.objects.filter(recipe=obj, user=cur_user).exists()
+        return cur_user and cur_user.is_authenticated and FavoriteRecipe.objects.filter(recipe=obj, user=cur_user).exists()
+
+    def get_is_in_shopping_cart(self, obj):
+        cur_user = self.context.get('request').user
+        return cur_user and cur_user.is_authenticated and ShoppingList.objects.filter(recipe=obj, user=cur_user).exists()
 
 class RecipeOutputSerializer(serializers.ModelSerializer):
     class Meta:
