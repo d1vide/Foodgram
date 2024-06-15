@@ -1,11 +1,12 @@
 import base64, os
-from djoser.views import UserViewSet as djoserUserViewSet
+from djoser.views import UserViewSet as DjoserUserViewSet
 from rest_framework import filters, mixins, viewsets, permissions, pagination, status
 from django.contrib.auth import get_user_model
 from django.core.files.base import ContentFile
 from rest_framework.decorators import action
 from django.db.models import Sum
 from rest_framework.response import Response
+from rest_framework.exceptions import NotAuthenticated
 from rest_framework.generics import get_object_or_404
 from django.http import HttpResponse
 
@@ -14,18 +15,29 @@ from .serializers import (CustomUserSerializer, FavoriteResponseSerializer, Favo
                             RecipeSafeSerializer, SubscribeSerializer, ShoppingListSerializer)
 from recipes.models import Recipe, Ingredient, Tag, FavoriteRecipe, ShoppingList, RecipeIngredient
 from users.models import Subscribe
-
+from .pagination import CustomPageNumberPagination
 
 User = get_user_model()
 
 
-class UserViewSet(djoserUserViewSet):
+class UserViewSet(DjoserUserViewSet):
     queryset = User.objects.all()
     serializer_class = CustomUserSerializer
-    permission_classes = (permissions.AllowAny, )
-    pagination_class = pagination.PageNumberPagination
+    permission_classes = (permissions.IsAuthenticatedOrReadOnly, )
+    pagination_class = CustomPageNumberPagination
 
-    @action(methods=['PUT', 'DELETE'], detail=False, url_path='me/avatar')
+    @action(["GET"], detail=False, permission_classes=(permissions.IsAuthenticated, ))
+    def me(self, *args, **kwargs):
+        return super().me(*args, **kwargs)
+
+    def create(self, request, *args, **kwargs):
+        response = super().create(request, *args, **kwargs)
+        data = response.data
+        data.pop('avatar')
+        data.pop('is_subscribed')
+        return Response(data, status=status.HTTP_201_CREATED)
+
+    @action(['PUT', 'DELETE'], detail=False, url_path='me/avatar', permission_classes=(permissions.IsAuthenticated, ))
     def avatar(self, request):
         user = request.user
         if request.method == 'PUT':
@@ -50,14 +62,14 @@ class UserViewSet(djoserUserViewSet):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
-    @action(methods=['POST', 'DELETE'], detail=True)
+    @action(['POST', 'DELETE'], detail=True)
     def subscribe(self, request, id):
         user = get_object_or_404(User, pk=id)
         subscriber = request.user
         if request.method == 'POST':
             serializer = SubscribeSerializer(user,
-                                            data=request.data,
-                                            context={'request': request})
+                                             data=request.data,
+                                             context={'request': request})
             serializer.is_valid(raise_exception=True)
             Subscribe.objects.create(user=user, subscriber=subscriber)
             return Response(serializer.data,

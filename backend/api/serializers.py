@@ -1,6 +1,7 @@
 from rest_framework import serializers
 
 from recipes.models import Recipe, RecipeIngredient, Ingredient, Tag, FavoriteRecipe, ShoppingList
+from users.models import Subscribe
 
 from djoser.serializers import UserSerializer
 from django.contrib.auth import get_user_model
@@ -9,9 +10,20 @@ User = get_user_model()
 
 
 class CustomUserSerializer(UserSerializer):
+    is_subscribed = serializers.SerializerMethodField(read_only=True)
     class Meta:
         model = User
-        fields = ('email', 'id', 'username', 'first_name', 'last_name', 'password')
+        fields = ('email', 'id', 'username', 'first_name', 'last_name', 'password', 'is_subscribed', 'avatar')
+        extra_kwargs = {
+            'password': {'write_only': True}
+        }
+    
+    def get_is_subscribed(self, obj):
+        cur_user = self.context.get('request').user
+        if not cur_user.is_authenticated:
+            return False
+        return Subscribe.objects.filter(subscriber=cur_user, user=obj).exists()
+
 
     # def create(self, validated_data):
     #     password = validated_data.pop('password', None)
@@ -22,6 +34,14 @@ class CustomUserSerializer(UserSerializer):
     #     instance.save()
     #     return instance
 
+    # def to_representation(self, instance):
+    #     return {
+    #             "email": instance.email,
+    #             "username": instance.username,
+    #             "first_name": instance.first_name,
+    #             "last_name": instance.last_name,
+    #             "password": instance.password
+    #         }
 
 
 class TagSerializer(serializers.ModelSerializer):

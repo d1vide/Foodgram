@@ -11,8 +11,6 @@ router_v1.register(r'recipes', RecipeViewSet)
 router_v1.register(r'users', UserViewSet)
 
 urlpatterns = [
-    # path('', include('djoser.urls')),
     path('auth/', include('djoser.urls.authtoken')),
-    # path('recipes/<int:pk>/favorite/', add_delete_favorite),
     path('', include(router_v1.urls)),
 ]
