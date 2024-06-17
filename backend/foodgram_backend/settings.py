@@ -44,6 +44,8 @@ INSTALLED_APPS = [
     'recipes.apps.RecipesConfig',
     'users.apps.UsersConfig',
     'api.apps.ApiConfig',
+    'shortener',
+    'django_filters',
 ]
 
 MIDDLEWARE = [
@@ -142,7 +144,7 @@ REST_FRAMEWORK = {
         'rest_framework.authentication.TokenAuthentication',
     ),
     'DEFAULT_PERMISSION_CLASSES': (
-        'rest_framework.permissions.IsAuthenticatedOrReadOnly',
+        'rest_framework.permissions.AllowAny',
     ),
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
     'PAGE_SIZE': 5,
@@ -158,6 +160,7 @@ DJOSER = {
     },
     'PERMISSIONS': {
         'user_list': ('rest_framework.permissions.AllowAny',),
-        'user': ('djoser.permissions.CurrentUserOrAdminOrReadOnly', )
+        'user': ('djoser.permissions.CurrentUserOrAdminOrReadOnly', ),
+        'token_create': ['rest_framework.permissions.AllowAny'],
     },
 }
