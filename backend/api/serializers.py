@@ -1,16 +1,16 @@
-from rest_framework import serializers, exceptions
-
-from recipes.models import Recipe, RecipeIngredient, Ingredient, Tag, FavoriteRecipe, ShoppingList
-from users.models import Subscribe
+from django.contrib.auth import get_user_model
 from django.db.models import F
 from djoser.serializers import UserSerializer
 from drf_extra_fields.fields import Base64ImageField
-from django.contrib.auth import get_user_model
+from rest_framework import serializers, exceptions
 
 from .constants import (AMOUNT_NEGATIVE_ERROR, IMAGE_REQUIERED_ERROR,
                         INGREDIENT_REPEAT_ERROR, INGREDIENT_REQUIERED_ERROR,
                         TAG_REPEAT_ERROR, TAG_REQUIERED_ERROR,
                         TIME_NEGATIVE_ERROR, )
+from recipes.models import (FavoriteRecipe, Recipe, RecipeIngredient,
+                            Ingredient, Tag, ShoppingList)
+from users.models import Subscribe
 
 User = get_user_model()
 
@@ -82,7 +82,8 @@ class RecipeUnsafeSerializer(serializers.ModelSerializer):
         fields = ('ingredients', 'tags', 'name', 'text',
                   'cooking_time', 'image', )
 
-    def _create_ingredients(self, recipeingredient, recipe):
+    @staticmethod
+    def _create_ingredients(recipeingredient, recipe):
         for ingr in recipeingredient:
             RecipeIngredient.objects.get_or_create(ingredients=ingr['id'],
                                                    recipes=recipe,
@@ -102,11 +103,11 @@ class RecipeUnsafeSerializer(serializers.ModelSerializer):
 
     def update(self, recipe, validated_data):
         tags_data = validated_data.pop('tags', None)
-        recipeingredient_data = validated_data.pop('recipeingredient', None)   
+        recipeingredient_data = validated_data.pop('recipeingredient', None)
         if tags_data is None:
             raise serializers.ValidationError(TAG_REQUIERED_ERROR)
         if recipeingredient_data is None:
-            raise serializers.ValidationError(INGREDIENT_REQUIERED_ERROR)     
+            raise serializers.ValidationError(INGREDIENT_REQUIERED_ERROR)
         if tags_data:
             recipe.tags.clear()
             recipe.tags.set(tags_data)
@@ -187,7 +188,7 @@ class RecipeSafeSerializer(serializers.ModelSerializer):
                                                 user=cur_user).exists())
 
 
-class FavoriteAndShoppingCartResponseSerializer(serializers.ModelSerializer):
+class FavoriteShoppingResponseSerializer(serializers.ModelSerializer):
     id = serializers.IntegerField(required=True)
 
     class Meta:
@@ -224,9 +225,9 @@ class SubscribeSerializer(serializers.ModelSerializer):
         recipes = obj.recipes.all()
         if recipes_limit:
             recipes = recipes[:int(recipes_limit)]
-        serializer = FavoriteAndShoppingCartResponseSerializer(recipes,
-                                                               many=True,
-                                                               read_only=True)
+        serializer = FavoriteShoppingResponseSerializer(recipes,
+                                                        many=True,
+                                                        read_only=True)
         return serializer.data
 
     def get_is_subscribed(self, obj):
