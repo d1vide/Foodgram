@@ -39,7 +39,7 @@ class UserViewSet(DjoserUserViewSet):
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        user = serializer.save()
+        serializer.save()
         data = serializer.data
         data.pop('avatar', None)
         data.pop('is_subscribed', None)
@@ -65,7 +65,6 @@ class UserViewSet(DjoserUserViewSet):
             user.save()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
-
     @action(['POST', 'DELETE'],
             detail=True)
     def subscribe(self, request, id):
@@ -90,7 +89,9 @@ class UserViewSet(DjoserUserViewSet):
             permission_classes=(permissions.IsAuthenticated, ))
     def subscriptions(self, request):
         queryset = User.objects.filter(following__subscriber=request.user)
-        serializer = SubscribeSerializer(self.paginate_queryset(queryset), many=True, context={'request': request})
+        serializer = SubscribeSerializer(self.paginate_queryset(queryset),
+                                         many=True,
+                                         context={'request': request})
         return self.get_paginated_response(serializer.data)
 
 
@@ -162,7 +163,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
 
     @action(methods=['GET'], detail=True, url_path='get-link')
     def get_short_link(self, request, pk):
-        recipe = get_object_or_404(Recipe, pk=pk)
+        get_object_or_404(Recipe, pk=pk)
         original_url = request.build_absolute_uri(reverse('recipe-detail', args=(pk, )))
         user = request.user if request.user.is_authenticated else User.objects.get_or_create(username='guest')[0]
         short_link = shortener.create(user, original_url)
