@@ -1,13 +1,13 @@
 from django.contrib.auth import get_user_model
+from django.core.validators import MinValueValidator
 from django.db.models import F
 from djoser.serializers import UserSerializer as DjoserSerializer
 from drf_extra_fields.fields import Base64ImageField
 from rest_framework import serializers, exceptions
 
-from .constants import (AMOUNT_NEGATIVE_ERROR, IMAGE_REQUIERED_ERROR,
-                        INGREDIENT_REPEAT_ERROR, INGREDIENT_REQUIERED_ERROR,
-                        TAG_REPEAT_ERROR, TAG_REQUIERED_ERROR,
-                        TIME_NEGATIVE_ERROR, )
+from .constants import (IMAGE_REQUIERED_ERROR, INGREDIENT_REPEAT_ERROR,
+                        INGREDIENT_REQUIERED_ERROR, TAG_REPEAT_ERROR,
+                        TAG_REQUIERED_ERROR, )
 from recipes.models import (FavoriteRecipe, Recipe, RecipeIngredient,
                             Ingredient, Tag, ShoppingList)
 from users.models import Subscribe
@@ -76,18 +76,14 @@ class RecipeUnsafeSerializer(serializers.ModelSerializer):
     ingredients = RecipeIngredientSerializer(many=True,
                                              source='recipeingredient')
     image = Base64ImageField(required=True)
+    cooking_time = serializers.IntegerField(
+        validators=[MinValueValidator(1)])
 
     class Meta:
         model = Recipe
         fields = ('ingredients', 'tags', 'name', 'text',
                   'cooking_time', 'image', )
 
-    # @staticmethod
-    # def _create_ingredients(recipeingredient, recipe):
-    #     for ingr in recipeingredient:
-    #         RecipeIngredient.objects.get_or_create(ingredients=ingr['id'],
-    #                                                recipes=recipe,
-    #                                                amount=ingr['amount'])
     @staticmethod
     def _create_ingredients(recipeingredient, recipe):
         ingredients = []
@@ -114,7 +110,7 @@ class RecipeUnsafeSerializer(serializers.ModelSerializer):
         tags_data = validated_data.pop('tags', None)
         recipeingredient_data = validated_data.pop('recipeingredient', None)
         recipe.tags.clear()
-        recipe.tags.set(tags_data)  
+        recipe.tags.set(tags_data)
         recipe.ingredients.clear()
         self._create_ingredients(recipeingredient_data, recipe)
         return super().update(recipe, validated_data)
@@ -130,32 +126,21 @@ class RecipeUnsafeSerializer(serializers.ModelSerializer):
         ingredients = self.initial_data.get('ingredients')
         if not ingredients:
             raise exceptions.ValidationError(INGREDIENT_REQUIERED_ERROR)
-        check_repetitive_set = list()
         for ingredient in ingredients:
             serializer = RecipeIngredientSerializer(data=ingredient)
             serializer.is_valid(raise_exception=True)
-            # if int(ingredient.get('amount')) <= 0:
-            #     raise exceptions.ValidationError(AMOUNT_NEGATIVE_ERROR)
-            if ingredient in check_repetitive_set:
-                raise exceptions.ValidationError(INGREDIENT_REPEAT_ERROR)
-            check_repetitive_set.append(ingredient)
+        ingredient_ids = [ingredient['id'] for ingredient in ingredients]
+        if len(ingredient_ids) != len(set(ingredient_ids)):
+            raise exceptions.ValidationError(INGREDIENT_REPEAT_ERROR)
         return data
 
     def validate_tags(self, data):
         tags = self.initial_data.get('tags')
         if not tags:
             raise exceptions.ValidationError(TAG_REQUIERED_ERROR)
-        check_repetitive_set = set()
-        for tag in tags:
-            if tag in check_repetitive_set:
-                raise exceptions.ValidationError(TAG_REPEAT_ERROR)
-            check_repetitive_set.add(tag)
-        return data
-
-    def validate_cooking_time(self, data):
-        cooking_time = self.initial_data.get('cooking_time')
-        if cooking_time <= 0:
-            raise exceptions.ValidationError(TIME_NEGATIVE_ERROR)
+        tag_ids = [tag for tag in tags]
+        if len(tag_ids) != len(set(tag_ids)):
+            raise exceptions.ValidationError(TAG_REPEAT_ERROR)
         return data
 
     def validate_image(self, image):
@@ -208,12 +193,25 @@ class FavoriteShoppingResponseSerializer(serializers.ModelSerializer):
         fields = ('id', 'name', 'image', 'cooking_time', )
 
 
-class FavoriteSerializer(serializers.ModelSerializer):
+class RecipeUserBaseSerializer(serializers.ModelSerializer):
     recipe = serializers.PrimaryKeyRelatedField(queryset=Recipe.objects.all())
     user = serializers.PrimaryKeyRelatedField(queryset=User.objects.all())
 
     class Meta:
+        abstract = True
+
+
+class FavoriteSerializer(RecipeUserBaseSerializer):
+
+    class Meta:
         model = FavoriteRecipe
+        fields = '__all__'
+
+
+class ShoppingListSerializer(RecipeUserBaseSerializer):
+
+    class Meta:
+        model = ShoppingList
         fields = '__all__'
 
 
@@ -245,15 +243,6 @@ class SubscribeSerializer(serializers.ModelSerializer):
     def get_is_subscribed(self, obj):
         cur_user = self.context.get('request').user
         return is_subscribed(cur_user, obj)
-
-
-class ShoppingListSerializer(serializers.ModelSerializer):
-    recipe = serializers.PrimaryKeyRelatedField(queryset=Recipe.objects.all())
-    user = serializers.PrimaryKeyRelatedField(queryset=User.objects.all())
-
-    class Meta:
-        model = ShoppingList
-        fields = '__all__'
 
 
 class AvatarSerializer(serializers.ModelSerializer):
