@@ -16,7 +16,7 @@ from shortener import shortener
 from .filters import IngredientFilter, RecipeFilter
 from .pagination import CustomPageNumberPagination
 from .permissions import AuthorOrSafeMethodsOnly
-from .serializers import (AvatarSerializer, CustomUserSerializer,
+from .serializers import (AvatarSerializer, UserSerializer,
                           FavoriteSerializer,
                           FavoriteShoppingResponseSerializer,
                           IngredientSerializer, RecipeSafeSerializer,
@@ -31,7 +31,7 @@ User = get_user_model()
 
 class UserViewSet(DjoserUserViewSet):
     queryset = User.objects.all()
-    serializer_class = CustomUserSerializer
+    serializer_class = UserSerializer
     permission_classes = (permissions.IsAuthenticatedOrReadOnly, )
     pagination_class = CustomPageNumberPagination
 

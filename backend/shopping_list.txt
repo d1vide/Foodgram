@@ -1,2 +1,1 @@
-fds: 20gff 
-fdss: 10fr 
+fds: 25gff 

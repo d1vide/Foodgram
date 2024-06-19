@@ -1,6 +1,6 @@
 from django.contrib.auth import get_user_model
 from django.db.models import F
-from djoser.serializers import UserSerializer
+from djoser.serializers import UserSerializer as DjoserSerializer
 from drf_extra_fields.fields import Base64ImageField
 from rest_framework import serializers, exceptions
 
@@ -22,7 +22,7 @@ def is_subscribed(user, obj):
                                          user=obj).exists())
 
 
-class CustomUserSerializer(UserSerializer):
+class UserSerializer(DjoserSerializer):
     is_subscribed = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
@@ -82,12 +82,21 @@ class RecipeUnsafeSerializer(serializers.ModelSerializer):
         fields = ('ingredients', 'tags', 'name', 'text',
                   'cooking_time', 'image', )
 
+    # @staticmethod
+    # def _create_ingredients(recipeingredient, recipe):
+    #     for ingr in recipeingredient:
+    #         RecipeIngredient.objects.get_or_create(ingredients=ingr['id'],
+    #                                                recipes=recipe,
+    #                                                amount=ingr['amount'])
     @staticmethod
     def _create_ingredients(recipeingredient, recipe):
+        ingredients = []
         for ingr in recipeingredient:
-            RecipeIngredient.objects.get_or_create(ingredients=ingr['id'],
-                                                   recipes=recipe,
-                                                   amount=ingr['amount'])
+            ingredient = RecipeIngredient(ingredients=ingr['id'],
+                                          recipes=recipe,
+                                          amount=ingr['amount'])
+            ingredients.append(ingredient)
+        RecipeIngredient.objects.bulk_create(ingredients)
 
     def to_representation(self, instance):
         serializer = RecipeSafeSerializer(instance, context=self.context)
@@ -104,17 +113,18 @@ class RecipeUnsafeSerializer(serializers.ModelSerializer):
     def update(self, recipe, validated_data):
         tags_data = validated_data.pop('tags', None)
         recipeingredient_data = validated_data.pop('recipeingredient', None)
-        if tags_data is None:
-            raise serializers.ValidationError(TAG_REQUIERED_ERROR)
-        if recipeingredient_data is None:
-            raise serializers.ValidationError(INGREDIENT_REQUIERED_ERROR)
-        if tags_data:
-            recipe.tags.clear()
-            recipe.tags.set(tags_data)
-        if recipeingredient_data:
-            recipe.ingredients.clear()
-            self._create_ingredients(recipeingredient_data, recipe)
+        recipe.tags.clear()
+        recipe.tags.set(tags_data)  
+        recipe.ingredients.clear()
+        self._create_ingredients(recipeingredient_data, recipe)
         return super().update(recipe, validated_data)
+
+    def validate(self, data):
+        if 'tags' not in data:
+            raise serializers.ValidationError(TAG_REQUIERED_ERROR)
+        if 'recipeingredient' not in data:
+            raise serializers.ValidationError(INGREDIENT_REQUIERED_ERROR)
+        return data
 
     def validate_ingredients(self, data):
         ingredients = self.initial_data.get('ingredients')
@@ -122,8 +132,10 @@ class RecipeUnsafeSerializer(serializers.ModelSerializer):
             raise exceptions.ValidationError(INGREDIENT_REQUIERED_ERROR)
         check_repetitive_set = list()
         for ingredient in ingredients:
-            if int(ingredient.get('amount')) <= 0:
-                raise exceptions.ValidationError(AMOUNT_NEGATIVE_ERROR)
+            serializer = RecipeIngredientSerializer(data=ingredient)
+            serializer.is_valid(raise_exception=True)
+            # if int(ingredient.get('amount')) <= 0:
+            #     raise exceptions.ValidationError(AMOUNT_NEGATIVE_ERROR)
             if ingredient in check_repetitive_set:
                 raise exceptions.ValidationError(INGREDIENT_REPEAT_ERROR)
             check_repetitive_set.append(ingredient)
@@ -154,7 +166,7 @@ class RecipeUnsafeSerializer(serializers.ModelSerializer):
 
 class RecipeSafeSerializer(serializers.ModelSerializer):
     tags = TagSerializer(many=True, read_only=True)
-    author = CustomUserSerializer(read_only=True)
+    author = UserSerializer(read_only=True)
     ingredients = serializers.SerializerMethodField()
     is_favorited = serializers.SerializerMethodField(read_only=True)
     is_in_shopping_cart = serializers.SerializerMethodField(read_only=True)
