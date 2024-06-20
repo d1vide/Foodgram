@@ -6,8 +6,9 @@ from drf_extra_fields.fields import Base64ImageField
 from rest_framework import serializers, exceptions
 
 from .constants import (IMAGE_REQUIERED_ERROR, INGREDIENT_REPEAT_ERROR,
-                        INGREDIENT_REQUIERED_ERROR, TAG_REPEAT_ERROR,
-                        TAG_REQUIERED_ERROR, )
+                        INGREDIENT_REQUIERED_ERROR, REPEAT_ERROR,
+                        TAG_REPEAT_ERROR, TAG_REQUIERED_ERROR,
+                        SELF_SUBSCRIBE_ERROR)
 from recipes.models import (FavoriteRecipe, Recipe, RecipeIngredient,
                             Ingredient, Tag, ShoppingList)
 from users.models import Subscribe
@@ -101,6 +102,7 @@ class RecipeUnsafeSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         tags_data = validated_data.pop('tags', None)
         recipeingredient_data = validated_data.pop('recipeingredient', None)
+        validated_data['author'] = self.context['request'].user
         recipe = Recipe.objects.create(**validated_data)
         recipe.tags.set(tags_data)
         self._create_ingredients(recipeingredient_data, recipe)
@@ -115,12 +117,12 @@ class RecipeUnsafeSerializer(serializers.ModelSerializer):
         self._create_ingredients(recipeingredient_data, recipe)
         return super().update(recipe, validated_data)
 
-    def validate(self, data):
-        if 'tags' not in data:
+    def validate(self, attrs):
+        if 'tags' not in attrs:
             raise serializers.ValidationError(TAG_REQUIERED_ERROR)
-        if 'recipeingredient' not in data:
+        if 'recipeingredient' not in attrs:
             raise serializers.ValidationError(INGREDIENT_REQUIERED_ERROR)
-        return data
+        return attrs
 
     def validate_ingredients(self, data):
         ingredients = self.initial_data.get('ingredients')
@@ -215,7 +217,7 @@ class ShoppingListSerializer(RecipeUserBaseSerializer):
         fields = '__all__'
 
 
-class SubscribeSerializer(serializers.ModelSerializer):
+class SubscribeResponseSerializer(serializers.ModelSerializer):
     recipes = serializers.SerializerMethodField(read_only=True)
     recipes_count = serializers.SerializerMethodField(read_only=True)
     is_subscribed = serializers.SerializerMethodField(read_only=True)
@@ -243,6 +245,22 @@ class SubscribeSerializer(serializers.ModelSerializer):
     def get_is_subscribed(self, obj):
         cur_user = self.context.get('request').user
         return is_subscribed(cur_user, obj)
+
+
+class SubscribeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Subscribe
+        fields = ('subscriber', 'user', )
+
+    def validate(self, attrs):
+        subscriber = attrs['subscriber']
+        user = attrs['user']
+        if subscriber == user:
+            raise exceptions.ValidationError(SELF_SUBSCRIBE_ERROR)
+        if Subscribe.objects.filter(user=user,
+                                    subscriber=subscriber).exists():
+            raise exceptions.ValidationError(REPEAT_ERROR)
+        return super().validate(attrs)
 
 
 class AvatarSerializer(serializers.ModelSerializer):
