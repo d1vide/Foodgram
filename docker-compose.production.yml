@@ -13,7 +13,7 @@ services:
       - pg_data:/var/lib/postgresql/data
 
   backend:
-    build: ./backend/
+    image: d1vide/foodgram_backend
     env_file: .env
     depends_on:
       - db
@@ -22,12 +22,12 @@ services:
       - media:/app/media
 
   frontend:
-    build: ./frontend/
+    image: d1vide/foodgram_frontend
     volumes:
       - ./frontend/:/app/result_build/
 
   nginx:
-    build: ./infra/
+    image: d1vide/foodgram_nginx
     env_file: .env
     ports:
       - 8000:80
