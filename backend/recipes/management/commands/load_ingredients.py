@@ -9,8 +9,9 @@ class Command(BaseCommand):
     help = 'Load ingredients into the database'
 
     def handle(self, *args, **kwargs):
-        file_path = os.path.join(settings.BASE_DIR, '..', 'data',
+        file_path = os.path.join(settings.BASE_DIR, 'data',
                                  'ingredients.csv')
+        print(file_path)
         if not os.path.exists(file_path):
             return
         with open(file_path, mode='r', encoding='utf-8') as file:
