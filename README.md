@@ -17,6 +17,7 @@
 git clone https://github.com/d1vide/foodgram.git
 ```
 Создать файл .env по примеру из файла <a href="https://github.com/d1vide/foodgram/blob/main/.env.example">.env.example</a>
+
 Запустить docker-compose файл:
 ```
 docker compose -f docker-compose.production.yml up -d
