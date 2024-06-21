@@ -3,7 +3,7 @@ import os
 from django.contrib.auth import get_user_model
 from django.db.models import Sum
 from django_filters.rest_framework import DjangoFilterBackend
-from django.http import Http404, HttpResponse
+from django.http import Http404, FileResponse
 from django.urls import reverse
 from djoser.views import UserViewSet as DjoserUserViewSet
 from rest_framework import permissions, status, viewsets
@@ -179,25 +179,30 @@ class RecipeViewSet(viewsets.ModelViewSet):
     def delete_shopping_cart(self, request, pk=None):
         return self._favorite_shopping_list_delete(request, ShoppingList, pk)
 
-    @action(methods=['GET'], detail=False)
+    @action(methods=['GET'], detail=False,
+            permission_classes=(permissions.IsAuthenticated, ))
     def download_shopping_cart(self, request):
         ingredients = RecipeIngredient.objects.filter(
             recipes__shopping__user=request.user).values(
             'ingredients__name',
             'ingredients__measurement_unit'
         ).annotate(amount=Sum('amount'))
-        file = self._create_txt(ingredients, 'shopping_list.txt')
-        return HttpResponse(file, content_type='text/plain')
+        self._create_txt(ingredients, 'shopping_list.txt')
+        return FileResponse(open('shopping_list.txt', "rb"),
+                            as_attachment=True,
+                            filename="shopping_List.txt",
+                            content_type='text/plain')
 
     @action(methods=['GET'], detail=True, url_path='get-link')
     def get_short_link(self, request, pk):
-        get_object_or_404(Recipe, pk=pk)
         original_url = request.build_absolute_uri(reverse('recipe-detail',
                                                           args=(pk, )))
+        original_url = original_url.replace('api/', '')
         user = (request.user if request.user.is_authenticated
                 else User.objects.get_or_create(username='guest')[0])
         short_link = shortener.create(user, original_url)
-        return Response({'short-link': '/s/' + short_link})
+        link = request.build_absolute_uri(f'/s/{short_link}')
+        return Response({'short-link': link})
 
 
 class TagViewSet(viewsets.ReadOnlyModelViewSet):

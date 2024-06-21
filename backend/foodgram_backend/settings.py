@@ -25,7 +25,7 @@ SECRET_KEY = os.getenv('SECRET_KEY', ' ')
 
 DEBUG = False if 'False' == os.getenv('DEBUG', 'True') else True
 
-ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', '').split() 
+ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', '').split()
 
 
 # Application definition
@@ -81,12 +81,12 @@ WSGI_APPLICATION = 'foodgram_backend.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/3.2/ref/settings/#databases
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
-    }
-}
+# DATABASES = {
+#     'default': {
+#         'ENGINE': 'django.db.backends.sqlite3',
+#         'NAME': BASE_DIR / 'db.sqlite3',
+#     }
+# }
 
 # DATABASES = {
 #     'default': {
@@ -136,7 +136,7 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/3.2/howto/static-files/
 
-STATIC_URL = '/static/'
+STATIC_URL = '/backend_static/'
 STATIC_ROOT = BASE_DIR / 'backend_static'
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
@@ -149,7 +149,7 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 AUTH_USER_MODEL = 'users.User'
 
-PAGINATION_PAGE_SIZE = 5
+PAGINATION_PAGE_SIZE = 6
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
