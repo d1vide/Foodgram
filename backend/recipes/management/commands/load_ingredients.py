@@ -1,5 +1,6 @@
 import csv
 import os
+
 from django.core.management.base import BaseCommand
 from recipes.models import Ingredient
 from django.conf import settings
@@ -11,7 +12,6 @@ class Command(BaseCommand):
     def handle(self, *args, **kwargs):
         file_path = os.path.join(settings.BASE_DIR, 'data',
                                  'ingredients.csv')
-        print(file_path)
         if not os.path.exists(file_path):
             return
         with open(file_path, mode='r', encoding='utf-8') as file:
