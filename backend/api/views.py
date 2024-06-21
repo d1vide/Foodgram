@@ -217,4 +217,3 @@ class IngredientViewSet(viewsets.ReadOnlyModelViewSet):
     pagination_class = None
     filter_backends = (DjangoFilterBackend, )
     filterset_class = IngredientFilter
-

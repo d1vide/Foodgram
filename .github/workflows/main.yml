@@ -30,7 +30,7 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip 
-        pip install flake8==6.0.0 flake8-isort==6.0.0
+        pip install flake8==6.0.0
         pip install -r ./backend/requirements.txt
 
     - name: Test with flake8
@@ -89,7 +89,7 @@ jobs:
         - name: Push to DockerHub
           uses: docker/build-push-action@v4
           with:
-            context: ./nginx/
+            context: ./infra/
             push: true
             tags: d1vide/foodgram_nginx:latest
 
