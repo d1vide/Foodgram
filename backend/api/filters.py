@@ -4,11 +4,12 @@ from recipes.models import Ingredient, Recipe
 
 
 class IngredientFilter(django_filters.FilterSet):
-    name = django_filters.CharFilter(field_name='name', lookup_expr='iregex')
+    name = django_filters.CharFilter(field_name='name',
+                                     lookup_expr='startswith')
 
     class Meta:
         model = Ingredient
-        fields = {'name': ('startswith', )}
+        fields = ('name', )
 
 
 class RecipeFilter(django_filters.FilterSet):
