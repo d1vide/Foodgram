@@ -1,11 +1,11 @@
 from django.contrib.auth import get_user_model
+from django.core.validators import MinValueValidator
 from django.db import models
 from django.db.models import UniqueConstraint
 
 from .constants import (INGREDIENT_NAME_LENGTH, INGREDIENT_UNIT_LENGTH,
                         RECIPE_NAME_LENGTH, RECIPE_TEXT_LENGTH,
                         TAG_NAME_LENGTH, TAG_SLUG_LENGTH, )
-from .validators import validate_forbidden_zero
 
 
 User = get_user_model()
@@ -62,7 +62,7 @@ class Recipe(models.Model):
                             max_length=RECIPE_TEXT_LENGTH)
     cooking_time = models.PositiveIntegerField(
         'Время готовки',
-        validators=[validate_forbidden_zero]
+        validators=[MinValueValidator(1)]
     )
 
     class Meta:
@@ -83,7 +83,7 @@ class RecipeIngredient(models.Model):
                                     on_delete=models.CASCADE,
                                     verbose_name='Ингредиент')
     amount = models.PositiveIntegerField('Количество',
-                                         validators=[validate_forbidden_zero])
+                                         validators=[MinValueValidator(1)])
 
     class Meta:
         verbose_name = 'ингредиент'

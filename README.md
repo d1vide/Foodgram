@@ -38,3 +38,5 @@ sudo docker compose -f docker-compose.production.yml exec backend python manage.
 https://testsite.sytes.net/recipes
 ```
 
+### Автор:
+<a href="https://github.com/d1vide">Алексей Наумов</a>
