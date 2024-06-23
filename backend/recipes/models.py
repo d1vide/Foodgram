@@ -1,11 +1,15 @@
+from datetime import datetime
+
 from django.contrib.auth import get_user_model
 from django.core.validators import MinValueValidator
 from django.db import models
 from django.db.models import UniqueConstraint
 
-from .constants import (INGREDIENT_NAME_LENGTH, INGREDIENT_UNIT_LENGTH,
-                        RECIPE_NAME_LENGTH, RECIPE_TEXT_LENGTH,
-                        TAG_NAME_LENGTH, TAG_SLUG_LENGTH, )
+from foodgram_backend.constants import (INGREDIENT_NAME_LENGTH,
+                                        INGREDIENT_UNIT_LENGTH,
+                                        MIN_VALUE_ERROR,
+                                        RECIPE_NAME_LENGTH, RECIPE_TEXT_LENGTH,
+                                        TAG_NAME_LENGTH, TAG_SLUG_LENGTH, )
 
 
 User = get_user_model()
@@ -62,13 +66,14 @@ class Recipe(models.Model):
                             max_length=RECIPE_TEXT_LENGTH)
     cooking_time = models.PositiveIntegerField(
         'Время готовки',
-        validators=[MinValueValidator(1)]
+        validators=[MinValueValidator(1, message=MIN_VALUE_ERROR)]
     )
+    created_at = models.DateTimeField('Время добавления', default=datetime.now)
 
     class Meta:
         verbose_name = 'рецепт'
         verbose_name_plural = 'Рецепты'
-        ordering = ('name', )
+        ordering = ('-created_at',)
 
     def __str__(self) -> str:
         return self.name
@@ -83,7 +88,9 @@ class RecipeIngredient(models.Model):
                                     on_delete=models.CASCADE,
                                     verbose_name='Ингредиент')
     amount = models.PositiveIntegerField('Количество',
-                                         validators=[MinValueValidator(1)])
+                                         validators=[MinValueValidator(
+                                             1,
+                                             message=MIN_VALUE_ERROR)])
 
     class Meta:
         verbose_name = 'ингредиент'

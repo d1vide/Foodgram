@@ -5,10 +5,12 @@ from djoser.serializers import UserSerializer as DjoserSerializer
 from drf_extra_fields.fields import Base64ImageField
 from rest_framework import serializers, exceptions
 
-from .constants import (IMAGE_REQUIERED_ERROR, INGREDIENT_REPEAT_ERROR,
-                        INGREDIENT_REQUIERED_ERROR, REPEAT_ERROR,
-                        TAG_REPEAT_ERROR, TAG_REQUIERED_ERROR,
-                        SELF_SUBSCRIBE_ERROR)
+from foodgram_backend.constants import (IMAGE_REQUIERED_ERROR,
+                                        INGREDIENT_REPEAT_ERROR,
+                                        INGREDIENT_REQUIERED_ERROR,
+                                        REPEAT_ERROR,
+                                        TAG_REPEAT_ERROR, TAG_REQUIERED_ERROR,
+                                        SELF_SUBSCRIBE_ERROR)
 from recipes.models import (FavoriteRecipe, Recipe, RecipeIngredient,
                             Ingredient, Tag, ShoppingList)
 from users.models import Subscribe

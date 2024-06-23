@@ -13,7 +13,7 @@ from rest_framework.response import Response
 from rest_framework.permissions import SAFE_METHODS
 from shortener import shortener
 
-from .constants import NOT_EXIST_ERROR, REPEAT_ERROR
+from foodgram_backend.constants import NOT_EXIST_ERROR, REPEAT_ERROR
 from .filters import IngredientFilter, RecipeFilter
 from .pagination import CustomPageNumberPagination
 from .permissions import AuthorOrSafeMethodsOnly

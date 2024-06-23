@@ -2,7 +2,7 @@ from django.contrib.auth.models import AbstractUser
 from django.db import models
 from django.db.models import CheckConstraint, UniqueConstraint, Q
 
-from .constants import FIRST_NAME_LENGTH, LAST_NAME_LENGTH
+from foodgram_backend.constants import FIRST_NAME_LENGTH, LAST_NAME_LENGTH
 
 
 class User(AbstractUser):
